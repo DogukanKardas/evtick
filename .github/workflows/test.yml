@@ -1,0 +1,78 @@
+name: Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start -x imgproxy,logflare
+
+      - name: Reset database
+        run: supabase db reset --no-seed
+
+      - name: Export Supabase env
+        run: |
+          supabase status --output json > supabase-status.json
+          node -e "
+            const s = require('./supabase-status.json');
+            const fs = require('fs');
+            fs.appendFileSync(process.env.GITHUB_ENV, 'NEXT_PUBLIC_SUPABASE_URL=' + s.API_URL + '\\n');
+            fs.appendFileSync(process.env.GITHUB_ENV, 'NEXT_PUBLIC_SUPABASE_ANON_KEY=' + s.ANON_KEY + '\\n');
+            fs.appendFileSync(process.env.GITHUB_ENV, 'SUPABASE_SERVICE_ROLE_KEY=' + s.SERVICE_ROLE_KEY + '\\n');
+            fs.appendFileSync(process.env.GITHUB_ENV, 'NEXT_PUBLIC_SITE_URL=http://localhost:3000\\n');
+          "
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Seed test data
+        run: npx tsx scripts/seed-test-data.ts
+
+      - name: Start app
+        run: npm run start &
+
+      - name: Wait for app
+        run: npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Security tests
+        run: npm run test:security
+        env:
+          RUN_INTEGRATION_TESTS: "1"
+          TEST_EMPLOYEE_A_EMAIL: test-employee-a@evtick.test
+          TEST_SUPER_EMAIL: test-super@evtick.test
+          TEST_PASSWORD: TestPass123!
+
+      - name: Performance tests
+        run: npm run test:perf
+        env:
+          CI: true
+          PERF_LOGIN_P95_MS: 2000
+
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          RUN_INTEGRATION_TESTS: "1"
+          TEST_EMPLOYEE_A_EMAIL: test-employee-a@evtick.test
+          TEST_SUPER_EMAIL: test-super@evtick.test
+          TEST_PASSWORD: TestPass123!

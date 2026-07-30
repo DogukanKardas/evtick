@@ -5,10 +5,22 @@ const statusConfig: Record<
   TicketStatus,
   { label: string; className: string }
 > = {
-  open: { label: "Açık", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
-  in_progress: { label: "İşlemde", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
-  resolved: { label: "Çözüldü", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" },
-  closed: { label: "Kapalı", className: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
+  open: {
+    label: "Açık",
+    className: "border border-primary/25 bg-primary/10 text-primary",
+  },
+  in_progress: {
+    label: "İşlemde",
+    className: "border border-warning/25 bg-warning/10 text-warning",
+  },
+  resolved: {
+    label: "Çözüldü",
+    className: "border border-success/25 bg-success/10 text-success",
+  },
+  closed: {
+    label: "Kapalı",
+    className: "border border-border bg-muted text-muted-foreground",
+  },
 };
 
 export function StatusBadge({ status }: { status: TicketStatus }) {
@@ -16,7 +28,7 @@ export function StatusBadge({ status }: { status: TicketStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
         config.className
       )}
     >
@@ -36,8 +48,8 @@ export function PriorityBadge({ priority }: { priority: string }) {
   const colors: Record<string, string> = {
     low: "text-muted-foreground",
     medium: "text-foreground",
-    high: "text-orange-600",
-    urgent: "text-red-600 font-semibold",
+    high: "text-warning",
+    urgent: "font-medium text-destructive",
   };
 
   return (

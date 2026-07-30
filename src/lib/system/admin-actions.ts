@@ -5,7 +5,55 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/auth/get-profile";
 import { logSystemAction } from "@/lib/system/audit";
-import type { Profile } from "@/types/database";
+import { getActionLabel, getAuditEntityHref } from "@/lib/system/audit-labels";
+import type { AdminsPageSummary, Profile, SystemAuditLog } from "@/types/database";
+
+const ADMIN_ACTIONS = [
+  "invite_super_admin",
+  "promote_super_admin",
+  "demote_super_admin",
+];
+
+export async function getAdminsPageSummary(): Promise<AdminsPageSummary> {
+  await requireSuperAdmin();
+  const supabase = await createClient();
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const [totalRes, monthRes, promotableRes, actionsRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "super_admin"),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "super_admin")
+      .gte("created_at", monthStart.toISOString()),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .neq("role", "super_admin"),
+    supabase
+      .from("system_audit_logs")
+      .select("id", { count: "exact", head: true })
+      .in("action", ADMIN_ACTIONS)
+      .gte("created_at", weekStart.toISOString()),
+  ]);
+
+  return {
+    total_admins: totalRes.count ?? 0,
+    admins_added_this_month: monthRes.count ?? 0,
+    promotable_users: promotableRes.count ?? 0,
+    admin_actions_this_week: actionsRes.count ?? 0,
+  };
+}
 
 export async function getSuperAdmins(): Promise<Profile[]> {
   await requireSuperAdmin();
@@ -13,11 +61,44 @@ export async function getSuperAdmins(): Promise<Profile[]> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("*")
+    .select("*, company:companies(*)")
     .eq("role", "super_admin")
     .order("created_at", { ascending: true });
 
   return (data ?? []) as Profile[];
+}
+
+export async function getPromotableUsers(): Promise<Profile[]> {
+  await requireSuperAdmin();
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("*, company:companies(*)")
+    .neq("role", "super_admin")
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as Profile[];
+}
+
+export async function getAdminAuditActivity(
+  limit = 30
+): Promise<(SystemAuditLog & { action_label: string; href?: string })[]> {
+  await requireSuperAdmin();
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("system_audit_logs")
+    .select("*, actor:profiles!system_audit_logs_actor_id_fkey(*)")
+    .in("action", ADMIN_ACTIONS)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data ?? []).map((log) => ({
+    ...(log as SystemAuditLog),
+    action_label: getActionLabel(log.action),
+    href: getAuditEntityHref(log.entity_type, log.entity_id),
+  }));
 }
 
 export async function countSuperAdmins(): Promise<number> {
@@ -30,7 +111,7 @@ export async function countSuperAdmins(): Promise<number> {
 }
 
 export async function inviteSuperAdminAction(
-  _prev: { error?: string; success?: boolean } | null,
+  _prev: { error?: string; success?: boolean; email?: string } | null,
   formData: FormData
 ) {
   const actor = await requireSuperAdmin();
@@ -39,6 +120,13 @@ export async function inviteSuperAdminAction(
 
   if (!email || !fullName) {
     return { error: "E-posta ve ad soyad zorunludur." };
+  }
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return {
+      error:
+        "SUPABASE_SERVICE_ROLE_KEY tanımlı değil. Davet göndermek için ortam değişkenini ekleyin.",
+    };
   }
 
   const supabase = await createClient();
@@ -98,7 +186,7 @@ export async function inviteSuperAdminAction(
     });
 
     revalidatePath("/system/admins");
-    return { success: true };
+    return { success: true, email };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Davet gönderilemedi.";
     return { error: message };
@@ -192,5 +280,6 @@ export async function demoteSuperAdminAction(profileId: string) {
   });
 
   revalidatePath("/system/admins");
+  revalidatePath("/system/users");
   return { success: true };
 }

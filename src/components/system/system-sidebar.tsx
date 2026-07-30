@@ -26,9 +26,9 @@ export function SystemSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r bg-muted/30 md:block">
-      <div className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col p-3">
-        <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <aside className="hidden w-56 shrink-0 border-r border-sidebar-border bg-sidebar md:block">
+      <div className="sticky top-14 flex h-[calc(100dvh-3.5rem)] flex-col p-3">
+        <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Sistem Paneli
         </p>
         <nav className="flex flex-1 flex-col gap-0.5">
@@ -41,10 +41,10 @@ export function SystemSidebar() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                    : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -55,7 +55,7 @@ export function SystemSidebar() {
         </nav>
         <Link
           href="/system/companies/new"
-          className="mt-auto flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+          className="mt-auto flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
         >
           <PlusCircle className="h-4 w-4" />
           Yeni Şirket

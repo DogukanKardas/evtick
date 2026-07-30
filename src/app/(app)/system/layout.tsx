@@ -9,9 +9,12 @@ export default async function SystemLayout({
   await requireSuperAdmin();
 
   return (
-    <div data-system-panel className="-mx-4 flex min-h-[calc(100vh-8rem)] md:-mx-0">
+    <div
+      data-system-panel
+      className="flex min-h-[calc(100dvh-3.5rem)] w-full bg-background"
+    >
       <SystemSidebar />
-      <div className="min-w-0 flex-1 px-4 md:max-w-none md:px-6">
+      <div className="min-w-0 flex-1 overflow-x-hidden px-4 py-6 md:px-6">
         <SystemBreadcrumb />
         {children}
       </div>

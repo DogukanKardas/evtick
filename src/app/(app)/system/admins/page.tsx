@@ -1,18 +1,9 @@
-import { getSuperAdmins } from "@/lib/system/admin-actions";
-import { getPlatformUsers } from "@/lib/system/user-actions";
-import { AdminsPanel } from "@/components/system/admins-form";
+import {
+  AdminsKpiSectionWithSuspense,
+  AdminsShellSectionWithSuspense,
+} from "@/components/system/admins-sections";
 
-export default async function SystemAdminsPage() {
-  const [admins, allUsers] = await Promise.all([
-    getSuperAdmins(),
-    getPlatformUsers(),
-  ]);
-
-  const adminIds = new Set(admins.map((a) => a.id));
-  const promotableUsers = allUsers.filter(
-    (u) => !adminIds.has(u.id) && u.role !== "super_admin"
-  );
-
+export default function SystemAdminsPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -22,7 +13,8 @@ export default async function SystemAdminsPage() {
         </p>
       </div>
 
-      <AdminsPanel admins={admins} promotableUsers={promotableUsers} />
+      <AdminsKpiSectionWithSuspense />
+      <AdminsShellSectionWithSuspense />
     </div>
   );
 }

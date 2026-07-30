@@ -1,0 +1,3 @@
+-- Reference seed data for integration tests (applied via scripts/seed-test-data.ts)
+-- Companies: TESTA, TESTB, EVTK (platform)
+-- Users: test-*@evtick.test with password TestPass123!

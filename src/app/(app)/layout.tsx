@@ -15,7 +15,7 @@ export default async function AppLayout({
   return (
     <>
       <Header profile={profile} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:pb-8 has-[[data-system-panel]]:max-w-7xl">
+      <main className="mx-auto w-full max-w-5xl flex-1 bg-background px-4 py-6 pb-24 md:pb-8 has-[[data-system-panel]]:mx-0 has-[[data-system-panel]]:max-w-none has-[[data-system-panel]]:px-0 has-[[data-system-panel]]:py-0 has-[[data-system-panel]]:pb-24 md:has-[[data-system-panel]]:pb-0">
         {children}
       </main>
       <MobileNav profile={profile} />

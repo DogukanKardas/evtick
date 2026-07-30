@@ -53,7 +53,7 @@ export function MobileNav({ profile }: MobileNavProps) {
       ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background md:hidden">
       <div className="flex items-center justify-around px-1 py-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
@@ -62,9 +62,9 @@ export function MobileNav({ profile }: MobileNavProps) {
               key={href}
               href={href}
               className={cn(
-                "flex min-h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-xs transition-colors",
+                "flex min-h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1 text-xs",
                 active
-                  ? "text-primary"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -76,7 +76,7 @@ export function MobileNav({ profile }: MobileNavProps) {
         <form action={logoutAction}>
           <button
             type="submit"
-            className="flex min-h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            className="flex min-h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-5 w-5" />
             <span>Çıkış</span>

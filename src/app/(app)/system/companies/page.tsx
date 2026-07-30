@@ -1,11 +1,11 @@
 import { PlusCircle } from "lucide-react";
-import { getCompaniesWithStats } from "@/lib/system/actions";
-import { CompaniesTable } from "@/components/system/companies-table";
 import { LinkButton } from "@/components/ui/link-button";
+import {
+  CompaniesKpiSectionWithSuspense,
+  CompaniesTableSectionWithSuspense,
+} from "@/components/system/companies-sections";
 
-export default async function SystemCompaniesPage() {
-  const companies = await getCompaniesWithStats();
-
+export default function SystemCompaniesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -21,7 +21,9 @@ export default async function SystemCompaniesPage() {
         </LinkButton>
       </div>
 
-      <CompaniesTable companies={companies} />
+      <CompaniesKpiSectionWithSuspense />
+
+      <CompaniesTableSectionWithSuspense />
     </div>
   );
 }

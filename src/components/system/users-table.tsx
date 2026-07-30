@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import { LinkButton } from "@/components/ui/link-button";
 import { ROLE_LABELS, ASSIGNABLE_ROLES } from "@/types/database";
 import type { Profile, UserRole } from "@/types/database";
 import { updatePlatformUserRoleAction } from "@/lib/system/user-actions";
@@ -80,9 +81,14 @@ export function UsersTable({ users, companies }: UsersTableProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Kullanıcı bulunamadı.
-        </p>
+        <div className="py-12 text-center">
+          <p className="text-muted-foreground">Kullanıcı bulunamadı.</p>
+          {users.length === 0 && (
+            <LinkButton href="/system/users/new" className="mt-4">
+              İlk kullanıcıyı oluştur
+            </LinkButton>
+          )}
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
@@ -97,7 +103,7 @@ export function UsersTable({ users, companies }: UsersTableProps) {
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <tr key={u.id} className="border-b last:border-0">
+                <tr key={u.id} className="border-b last:border-0 hover:bg-muted/50">
                   <td className="px-4 py-3">
                     <Link
                       href={`/system/users/${u.id}`}

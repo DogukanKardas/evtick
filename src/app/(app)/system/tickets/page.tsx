@@ -1,13 +1,9 @@
-import { getPlatformTickets } from "@/lib/system/ticket-actions";
-import { getCompaniesWithStats } from "@/lib/system/actions";
-import { TicketsTable } from "@/components/system/tickets-table";
+import {
+  TicketsKpiSectionWithSuspense,
+  TicketsTableSectionWithSuspense,
+} from "@/components/system/tickets-sections";
 
-export default async function SystemTicketsPage() {
-  const [tickets, companies] = await Promise.all([
-    getPlatformTickets(),
-    getCompaniesWithStats(),
-  ]);
-
+export default function SystemTicketsPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -17,10 +13,8 @@ export default async function SystemTicketsPage() {
         </p>
       </div>
 
-      <TicketsTable
-        tickets={tickets}
-        companies={companies.map((c) => ({ id: c.id, name: c.name }))}
-      />
+      <TicketsKpiSectionWithSuspense />
+      <TicketsTableSectionWithSuspense />
     </div>
   );
 }

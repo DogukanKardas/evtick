@@ -1,9 +1,9 @@
-import { getAuditLogs } from "@/lib/system/audit";
-import { AuditLogTable } from "@/components/system/audit-log-table";
+import {
+  AuditKpiSectionWithSuspense,
+  AuditTableSectionWithSuspense,
+} from "@/components/system/audit-sections";
 
-export default async function SystemAuditPage() {
-  const logs = await getAuditLogs(100);
-
+export default function SystemAuditPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -13,7 +13,8 @@ export default async function SystemAuditPage() {
         </p>
       </div>
 
-      <AuditLogTable logs={logs} />
+      <AuditKpiSectionWithSuspense />
+      <AuditTableSectionWithSuspense />
     </div>
   );
 }

@@ -19,6 +19,16 @@ export interface CompanyWithStats extends Company {
   user_count: number;
   ticket_count: number;
   open_tickets: number;
+  last_ticket_at: string | null;
+  days_since_activity: number | null;
+}
+
+export interface CompaniesPageSummary {
+  total_companies: number;
+  active_companies: number;
+  inactive_companies: number;
+  total_users: number;
+  total_open_tickets: number;
 }
 
 export interface Profile {
@@ -36,6 +46,22 @@ export interface ProfileWithCompany extends Profile {
   company?: Company;
 }
 
+export interface AdminsPageSummary {
+  total_admins: number;
+  admins_added_this_month: number;
+  promotable_users: number;
+  admin_actions_this_week: number;
+}
+
+export interface TicketsPageSummary {
+  total_tickets: number;
+  open_tickets: number;
+  in_progress_tickets: number;
+  urgent_open: number;
+  tickets_today: number;
+  unassigned_open: number;
+}
+
 export interface PlatformStats {
   total_companies: number;
   active_companies: number;
@@ -45,6 +71,35 @@ export interface PlatformStats {
   open_tickets: number;
   tickets_today: number;
   resolved_this_week: number;
+  avg_resolution_hours: number | null;
+  urgent_open_tickets: number;
+}
+
+export interface TicketPriorityCount {
+  priority: TicketPriority;
+  count: number;
+}
+
+export interface DashboardAuditActivity {
+  id: string;
+  action: string;
+  action_label: string;
+  actor_name: string;
+  entity_type: string;
+  entity_id: string | null;
+  created_at: string;
+  href?: string;
+}
+
+export interface EmployeeDashboardSummary {
+  total: number;
+  open: number;
+  in_progress: number;
+  resolved: number;
+  closed: number;
+  urgent_open: number;
+  tickets_today: number;
+  awaiting_response: number;
 }
 
 export interface TicketStatusCount {
@@ -71,6 +126,16 @@ export interface PlatformAlert {
   type: "high_open_tickets" | "inactive_company";
   message: string;
   href?: string;
+  days?: number;
+}
+
+export interface AuditPageSummary {
+  total_logs: number;
+  logs_today: number;
+  logs_this_week: number;
+  company_actions: number;
+  user_actions: number;
+  ticket_actions: number;
 }
 
 export interface SystemAuditLog {

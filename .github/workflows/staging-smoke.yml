@@ -1,0 +1,25 @@
+name: Staging Smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+
+      - name: Staging smoke (read-only)
+        run: npm run test:staging:smoke
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.STAGING_SITE_URL }}
+          TEST_EMPLOYEE_A_EMAIL: ${{ secrets.STAGING_EMPLOYEE_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.STAGING_EMPLOYEE_PASSWORD }}

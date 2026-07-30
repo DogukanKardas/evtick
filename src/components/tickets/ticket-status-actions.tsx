@@ -1,6 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   assignTicketAction,
@@ -15,19 +17,30 @@ interface TicketStatusActionsProps {
 }
 
 export function TicketStatusActions({ ticket, profile }: TicketStatusActionsProps) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const isStaff = isSupportOrAdmin(profile);
   const isOwner = ticket.created_by === profile.id;
 
   function handleStatus(status: TicketStatus) {
     startTransition(async () => {
-      await updateTicketStatusAction(ticket.id, status);
+      const result = await updateTicketStatusAction(ticket.id, status);
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success("Durum güncellendi");
+        router.refresh();
+      }
     });
   }
 
   function handleAssign() {
     startTransition(async () => {
-      await assignTicketAction(ticket.id);
+      const result = await assignTicketAction(ticket.id);
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success("Talep üstlenildi");
+        router.refresh();
+      }
     });
   }
 

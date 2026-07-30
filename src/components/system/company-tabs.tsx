@@ -1,25 +1,35 @@
 "use client";
 
-import { useState, useTransition, useActionState } from "react";
+import { useState, useTransition, useActionState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LinkButton } from "@/components/ui/link-button";
 import { CompanyStatusBadge } from "@/components/system/company-status-badge";
-import {
-  updateCompanyAction,
-  toggleCompanyActiveAction,
-} from "@/lib/system/actions";
+import { CompanyActivityTab } from "@/components/system/company-activity-tab";
+import { TicketStatusChart } from "@/components/system/ticket-status-chart";
+import { updateCompanyAction, toggleCompanyActiveAction } from "@/lib/system/actions";
 import { updateCompanyUserRoleAction } from "@/lib/system/user-actions";
+import { isPlatformCompany } from "@/lib/system/company-constants";
 import { PriorityBadge, StatusBadge } from "@/components/tickets/status-badge";
 import { ROLE_LABELS, ASSIGNABLE_ROLES } from "@/types/database";
-import type { CompanyWithStats, Profile, Ticket, UserRole } from "@/types/database";
+import type {
+  CompanyWithStats,
+  Profile,
+  SystemAuditLog,
+  Ticket,
+  TicketPriority,
+  TicketStatus,
+  UserRole,
+} from "@/types/database";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
-type Tab = "general" | "users" | "tickets" | "stats";
+type Tab = "general" | "users" | "tickets" | "stats" | "activity";
 
 interface CompanyTabsProps {
   company: CompanyWithStats;
@@ -30,6 +40,9 @@ interface CompanyTabsProps {
     last30Days: number;
     total: number;
   };
+  auditLogs: (SystemAuditLog & { action_label: string; href?: string })[];
+  initialTab?: Tab;
+  onTabChange?: (tab: Tab) => void;
 }
 
 export function CompanyTabs({
@@ -37,13 +50,27 @@ export function CompanyTabs({
   users,
   tickets,
   stats,
+  auditLogs,
+  initialTab = "general",
+  onTabChange,
 }: CompanyTabsProps) {
-  const [tab, setTab] = useState<Tab>("general");
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
+
+  function selectTab(id: Tab) {
+    setTab(id);
+    onTabChange?.(id);
+  }
+
   const tabs: { id: Tab; label: string }[] = [
     { id: "general", label: "Genel" },
     { id: "users", label: "Kullanıcılar" },
     { id: "tickets", label: "Talepler" },
     { id: "stats", label: "İstatistik" },
+    { id: "activity", label: "Aktivite" },
   ];
 
   return (
@@ -53,7 +80,7 @@ export function CompanyTabs({
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => selectTab(t.id)}
             className={`rounded-md px-3 py-1.5 text-sm ${
               tab === t.id
                 ? "bg-primary text-primary-foreground"
@@ -66,9 +93,12 @@ export function CompanyTabs({
       </div>
 
       {tab === "general" && <CompanyGeneralTab company={company} />}
-      {tab === "users" && <CompanyUsersTab companyId={company.id} users={users} />}
+      {tab === "users" && (
+        <CompanyUsersTab companyId={company.id} users={users} />
+      )}
       {tab === "tickets" && <CompanyTicketsTab tickets={tickets} />}
       {tab === "stats" && <CompanyStatsTab stats={stats} />}
+      {tab === "activity" && <CompanyActivityTab logs={auditLogs} />}
     </div>
   );
 }
@@ -79,16 +109,35 @@ function CompanyGeneralTab({ company }: { company: CompanyWithStats }) {
   const [pending, startTransition] = useTransition();
   const [state, action, savePending] = useActionState(updateCompanyAction, null);
 
+  useEffect(() => {
+    if (state?.success) toast.success("Şirket güncellendi");
+    if (state?.error) toast.error(state.error);
+  }, [state]);
+
   async function copyCode() {
     await navigator.clipboard.writeText(company.code);
     setCopied(true);
+    toast.success("Kod kopyalandı");
     setTimeout(() => setCopied(false), 2000);
   }
 
   function handleToggle() {
+    if (isPlatformCompany(company.code) && company.is_active) {
+      toast.error("Platform şirketi (EVTK) pasife alınamaz.");
+      return;
+    }
     startTransition(async () => {
-      await toggleCompanyActiveAction(company.id, !company.is_active);
-      router.refresh();
+      const result = await toggleCompanyActiveAction(
+        company.id,
+        !company.is_active
+      );
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success(
+          company.is_active ? "Şirket pasife alındı" : "Şirket aktifleştirildi"
+        );
+        router.refresh();
+      }
     });
   }
 
@@ -145,26 +194,21 @@ function CompanyGeneralTab({ company }: { company: CompanyWithStats }) {
           />
         </div>
 
-        {state?.error && (
-          <p className="text-sm text-destructive">{state.error}</p>
-        )}
-        {state?.success && (
-          <p className="text-sm text-emerald-600">Güncellendi.</p>
-        )}
-
         <Button type="submit" className="min-h-10" disabled={savePending}>
           {savePending ? "Kaydediliyor..." : "Kaydet"}
         </Button>
       </form>
 
-      <Button
-        type="button"
-        variant={company.is_active ? "destructive" : "default"}
-        onClick={handleToggle}
-        disabled={pending}
-      >
-        {company.is_active ? "Pasife Al" : "Aktifleştir"}
-      </Button>
+      {!isPlatformCompany(company.code) && (
+        <Button
+          type="button"
+          variant={company.is_active ? "destructive" : "default"}
+          onClick={handleToggle}
+          disabled={pending}
+        >
+          {company.is_active ? "Pasife Al" : "Aktifleştir"}
+        </Button>
+      )}
     </div>
   );
 }
@@ -178,88 +222,183 @@ function CompanyUsersTab({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    let list = [...users];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (u) =>
+          u.full_name.toLowerCase().includes(q) ||
+          (u.email?.toLowerCase().includes(q) ?? false)
+      );
+    }
+    if (roleFilter) list = list.filter((u) => u.role === roleFilter);
+    return list;
+  }, [users, search, roleFilter]);
 
   function handleRoleChange(profileId: string, role: UserRole) {
     startTransition(async () => {
-      await updateCompanyUserRoleAction(profileId, role);
-      router.refresh();
+      const result = await updateCompanyUserRoleAction(profileId, role);
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success("Rol güncellendi");
+        router.refresh();
+      }
     });
   }
 
-  if (users.length === 0) {
-    return (
-      <p className="py-8 text-center text-muted-foreground">
-        Bu şirkette kullanıcı yok.
-      </p>
-    );
-  }
-
   return (
-    <ul className="divide-y rounded-lg border">
-      {users.map((u) => (
-        <li
-          key={u.id}
-          className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          placeholder="Ad veya e-posta ara..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="sm:max-w-xs"
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="min-h-10 rounded-md border bg-background px-3 text-sm"
         >
-          <div>
-            <p className="font-medium">{u.full_name}</p>
-            <p className="text-sm text-muted-foreground">{u.email}</p>
-          </div>
-          {u.role === "super_admin" ? (
-            <span className="text-sm">{ROLE_LABELS.super_admin}</span>
-          ) : (
-            <select
-              value={u.role}
-              disabled={pending}
-              onChange={(e) =>
-                handleRoleChange(u.id, e.target.value as UserRole)
-              }
-              className="min-h-10 rounded-md border bg-background px-3 text-sm"
+          <option value="">Tüm roller</option>
+          {[...ASSIGNABLE_ROLES, "super_admin" as UserRole].map((r) => (
+            <option key={r} value={r}>
+              {ROLE_LABELS[r]}
+            </option>
+          ))}
+        </select>
+        </div>
+        <LinkButton
+          href={`/system/users/new?companyId=${companyId}`}
+          variant="outline"
+          size="sm"
+          className="min-h-10 shrink-0"
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Kullanıcı Ekle
+        </LinkButton>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-muted-foreground">
+          Kullanıcı bulunamadı.
+        </p>
+      ) : (
+        <ul className="divide-y rounded-lg border">
+          {filtered.map((u) => (
+            <li
+              key={u.id}
+              className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              {ASSIGNABLE_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABELS[r]}
-                </option>
-              ))}
-            </select>
-          )}
-        </li>
-      ))}
-    </ul>
+              <div>
+                <Link
+                  href={`/system/users/${u.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {u.full_name}
+                </Link>
+                <p className="text-sm text-muted-foreground">{u.email}</p>
+              </div>
+              {u.role === "super_admin" ? (
+                <span className="text-sm">{ROLE_LABELS.super_admin}</span>
+              ) : (
+                <select
+                  value={u.role}
+                  disabled={pending}
+                  onChange={(e) =>
+                    handleRoleChange(u.id, e.target.value as UserRole)
+                  }
+                  className="min-h-10 rounded-md border bg-background px-3 text-sm"
+                >
+                  {ASSIGNABLE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
 function CompanyTicketsTab({ tickets }: { tickets: Ticket[] }) {
-  if (tickets.length === 0) {
-    return (
-      <p className="py-8 text-center text-muted-foreground">
-        Bu şirkette talep yok.
-      </p>
+  const [status, setStatus] = useState<TicketStatus | "">("");
+  const [priority, setPriority] = useState<TicketPriority | "">("");
+
+  const filtered = useMemo(() => {
+    let list = [...tickets];
+    if (status) list = list.filter((t) => t.status === status);
+    if (priority) list = list.filter((t) => t.priority === priority);
+    return list.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }
+  }, [tickets, status, priority]);
 
   return (
-    <ul className="divide-y rounded-lg border">
-      {tickets.map((t) => (
-        <li key={t.id} className="p-4">
-          <Link
-            href={`/system/tickets/${t.id}`}
-            className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="font-medium hover:underline">{t.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {format(new Date(t.created_at), "d MMM yyyy", { locale: tr })}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <StatusBadge status={t.status} />
-              <PriorityBadge priority={t.priority} />
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as TicketStatus | "")}
+          className="min-h-10 rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="">Tüm durumlar</option>
+          <option value="open">Açık</option>
+          <option value="in_progress">İşlemde</option>
+          <option value="resolved">Çözüldü</option>
+          <option value="closed">Kapalı</option>
+        </select>
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as TicketPriority | "")}
+          className="min-h-10 rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="">Tüm öncelikler</option>
+          <option value="low">Düşük</option>
+          <option value="medium">Orta</option>
+          <option value="high">Yüksek</option>
+          <option value="urgent">Acil</option>
+        </select>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-muted-foreground">
+          Talep bulunamadı.
+        </p>
+      ) : (
+        <ul className="divide-y rounded-lg border">
+          {filtered.map((t) => (
+            <li key={t.id} className="p-4">
+              <Link
+                href={`/system/tickets/${t.id}`}
+                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium hover:underline">{t.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(t.created_at), "d MMM yyyy", { locale: tr })}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <StatusBadge status={t.status} />
+                  <PriorityBadge priority={t.priority} />
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -272,31 +411,24 @@ function CompanyStatsTab({
     total: number;
   };
 }) {
-  const labels: Record<string, string> = {
-    open: "Açık",
-    in_progress: "İşlemde",
-    resolved: "Çözüldü",
-    closed: "Kapalı",
-  };
+  const chartData = Object.entries(stats.statusCounts).map(([status, count]) => ({
+    status: status as TicketStatus,
+    count,
+  }));
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="rounded-lg border p-4">
-        <p className="text-sm text-muted-foreground">Toplam talep</p>
-        <p className="text-2xl font-bold">{stats.total}</p>
-      </div>
-      <div className="rounded-lg border p-4">
-        <p className="text-sm text-muted-foreground">Son 30 gün</p>
-        <p className="text-2xl font-bold">{stats.last30Days}</p>
-      </div>
-      {Object.entries(stats.statusCounts).map(([status, count]) => (
-        <div key={status} className="rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">
-            {labels[status] ?? status}
-          </p>
-          <p className="text-2xl font-bold">{count}</p>
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">Toplam talep</p>
+          <p className="text-2xl font-bold">{stats.total}</p>
         </div>
-      ))}
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">Son 30 gün</p>
+          <p className="text-2xl font-bold">{stats.last30Days}</p>
+        </div>
+      </div>
+      <TicketStatusChart data={chartData} />
     </div>
   );
 }
