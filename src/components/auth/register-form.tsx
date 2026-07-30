@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { registerAction } from "@/lib/auth/actions";
+import { registerAction } from "@/lib/auth/register-action";
 
 export function RegisterForm() {
+  const router = useRouter();
   const [state, action, pending] = useActionState(registerAction, null);
+
+  useEffect(() => {
+    if (state?.success && state.redirectTo) {
+      router.push(state.redirectTo);
+    }
+  }, [state, router]);
 
   return (
     <Card className="w-full max-w-md">
@@ -35,6 +43,7 @@ export function RegisterForm() {
               name="companyCode"
               placeholder="DEMO01"
               required
+              autoComplete="organization"
               className="min-h-11 uppercase"
             />
           </div>
@@ -45,6 +54,7 @@ export function RegisterForm() {
               name="fullName"
               placeholder="Adınız Soyadınız"
               required
+              autoComplete="name"
               className="min-h-11"
             />
           </div>
@@ -56,6 +66,7 @@ export function RegisterForm() {
               type="email"
               placeholder="ornek@sirket.com"
               required
+              autoComplete="email"
               className="min-h-11"
             />
           </div>
@@ -67,6 +78,7 @@ export function RegisterForm() {
               type="password"
               minLength={6}
               required
+              autoComplete="new-password"
               className="min-h-11"
             />
           </div>
@@ -78,11 +90,19 @@ export function RegisterForm() {
               type="password"
               minLength={6}
               required
+              autoComplete="new-password"
               className="min-h-11"
             />
           </div>
           {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {state.error}
+            </p>
+          )}
+          {state?.success && (
+            <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+              Kayıt başarılı! Yönlendiriliyorsunuz...
+            </p>
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3">

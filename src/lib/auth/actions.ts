@@ -2,17 +2,25 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthCallbackUrl } from "@/lib/site-url";
 
 export async function loginAction(
-  _prev: { error?: string } | null,
+  _prev: { error?: string; success?: boolean; redirectTo?: string } | null,
   formData: FormData
 ) {
   const companyCode = (formData.get("companyCode") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
 
   if (!companyCode || !email || !password) {
     return { error: "Tüm alanları doldurun." };
+  }
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return {
+      error:
+        "Supabase bağlantı ayarları eksik. Vercel ortam değişkenlerini kontrol edin.",
+    };
   }
 
   const supabase = await createClient();
@@ -32,6 +40,12 @@ export async function loginAction(
   });
 
   if (signInError) {
+    if (signInError.message.toLowerCase().includes("email not confirmed")) {
+      return {
+        error:
+          "E-posta adresiniz henüz doğrulanmamış. Gelen kutunuzu kontrol edin.",
+      };
+    }
     return { error: "E-posta veya şifre hatalı." };
   }
 
@@ -49,68 +63,20 @@ export async function loginAction(
     .eq("user_id", user.id)
     .single();
 
-  if (!profile || profile.company_id !== company[0].id) {
+  if (!profile) {
+    await supabase.auth.signOut();
+    return {
+      error:
+        "Profil bulunamadı. Kayıt sırasında bir hata oluşmuş olabilir. Tekrar kayıt olun veya destek alın.",
+    };
+  }
+
+  if (profile.company_id !== company[0].id) {
     await supabase.auth.signOut();
     return { error: "Bu şirket kodu hesabınızla eşleşmiyor." };
   }
 
-  redirect("/dashboard");
-}
-
-export async function registerAction(
-  _prev: { error?: string } | null,
-  formData: FormData
-) {
-  const companyCode = (formData.get("companyCode") as string)?.trim();
-  const fullName = (formData.get("fullName") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim();
-  const password = formData.get("password") as string;
-  const confirmPassword = formData.get("confirmPassword") as string;
-
-  if (!companyCode || !fullName || !email || !password) {
-    return { error: "Tüm alanları doldurun." };
-  }
-
-  if (password.length < 6) {
-    return { error: "Şifre en az 6 karakter olmalıdır." };
-  }
-
-  if (password !== confirmPassword) {
-    return { error: "Şifreler eşleşmiyor." };
-  }
-
-  const supabase = await createClient();
-
-  const { data: company, error: companyError } = await supabase.rpc(
-    "get_company_by_code",
-    { p_code: companyCode }
-  );
-
-  if (companyError || !company?.length) {
-    return { error: "Geçersiz şirket kodu." };
-  }
-
-  const { error: signUpError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        company_id: company[0].id,
-        full_name: fullName,
-        role: "employee",
-      },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
-    },
-  });
-
-  if (signUpError) {
-    if (signUpError.message.includes("already registered")) {
-      return { error: "Bu e-posta adresi zaten kayıtlı." };
-    }
-    return { error: signUpError.message };
-  }
-
-  redirect("/verify-email?email=" + encodeURIComponent(email));
+  return { success: true, redirectTo: "/dashboard" };
 }
 
 export async function logoutAction() {
@@ -125,7 +91,7 @@ export async function resendVerificationAction(email: string) {
     type: "signup",
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+      emailRedirectTo: getAuthCallbackUrl(),
     },
   });
 

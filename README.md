@@ -21,23 +21,34 @@ npm install
 ### 2. Supabase projesi oluşturun
 
 1. [supabase.com](https://supabase.com) üzerinde yeni proje oluşturun
-2. SQL Editor'de `supabase/migrations/001_initial_schema.sql` dosyasını çalıştırın
+2. SQL Editor'de migration dosyalarını sırayla çalıştırın:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_fix_auth_trigger.sql`
 3. Authentication > URL Configuration'da Site URL ve Redirect URL ekleyin:
    - Site URL: `http://localhost:3000`
    - Redirect URLs: `http://localhost:3000/auth/callback`
 
 ### 3. Ortam değişkenlerini ayarlayın
 
+**Vercel (Production):** Project Settings → Environment Variables
+
+| Değişken | Değer |
+|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `NEXT_PUBLIC_SITE_URL` | `https://your-app.vercel.app` (Vercel domain'iniz) |
+
+**Supabase Auth URL ayarları** (Authentication → URL Configuration):
+
+- Site URL: `https://your-app.vercel.app`
+- Redirect URLs:
+  - `https://your-app.vercel.app/auth/callback`
+  - `http://localhost:3000/auth/callback` (local geliştirme için)
+
+**Local:**
+
 ```bash
 cp .env.local.example .env.local
-```
-
-`.env.local` dosyasını Supabase proje ayarlarından alınan değerlerle doldurun:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ### 4. Geliştirme sunucusunu başlatın

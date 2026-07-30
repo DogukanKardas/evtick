@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,17 @@ import {
 } from "@/components/ui/card";
 import { loginAction } from "@/lib/auth/actions";
 
-export function LoginForm() {
+export function LoginForm({ initialError }: { initialError?: string }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState(loginAction, null);
+  const error = state?.error ?? initialError;
+
+  useEffect(() => {
+    if (state?.success && state.redirectTo) {
+      router.push(state.redirectTo);
+      router.refresh();
+    }
+  }, [state, router]);
 
   return (
     <Card className="w-full max-w-md">
@@ -35,6 +45,7 @@ export function LoginForm() {
               name="companyCode"
               placeholder="DEMO01"
               required
+              autoComplete="organization"
               className="min-h-11 uppercase"
             />
           </div>
@@ -46,6 +57,7 @@ export function LoginForm() {
               type="email"
               placeholder="ornek@sirket.com"
               required
+              autoComplete="email"
               className="min-h-11"
             />
           </div>
@@ -56,11 +68,14 @@ export function LoginForm() {
               name="password"
               type="password"
               required
+              autoComplete="current-password"
               className="min-h-11"
             />
           </div>
-          {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
+          {error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
