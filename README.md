@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EvTick — IT Talep ve Takip Sistemi
 
-## Getting Started
+Mobil uyumlu, çok kiracılı IT destek talep ve takip web uygulaması.
 
-First, run the development server:
+## Özellikler
+
+- **Çok kiracılı yapı:** Her şirketin kendi kodu ile izole veri
+- **Kimlik doğrulama:** Şirket kodu + e-posta + şifre + e-posta doğrulama
+- **Rol bazlı erişim:** Çalışan, IT Destek, Yönetici
+- **Ticket yönetimi:** Talep açma, durum takibi, kapatma
+- **Canlı destek chat:** Ticket bazlı gerçek zamanlı mesajlaşma
+
+## Kurulum
+
+### 1. Bağımlılıkları yükleyin
+
+```bash
+npm install
+```
+
+### 2. Supabase projesi oluşturun
+
+1. [supabase.com](https://supabase.com) üzerinde yeni proje oluşturun
+2. SQL Editor'de `supabase/migrations/001_initial_schema.sql` dosyasını çalıştırın
+3. Authentication > URL Configuration'da Site URL ve Redirect URL ekleyin:
+   - Site URL: `http://localhost:3000`
+   - Redirect URLs: `http://localhost:3000/auth/callback`
+
+### 3. Ortam değişkenlerini ayarlayın
+
+```bash
+cp .env.local.example .env.local
+```
+
+`.env.local` dosyasını Supabase proje ayarlarından alınan değerlerle doldurun:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+### 4. Geliştirme sunucusunu başlatın
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Uygulama `http://localhost:3000` adresinde çalışır.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Test Hesabı
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Migration sonrası demo şirket kodu: **DEMO01**
 
-## Learn More
+1. `/register` sayfasından kayıt olun (şirket kodu: DEMO01)
+2. E-posta doğrulamasını tamamlayın
+3. `/login` ile giriş yapın
 
-To learn more about Next.js, take a look at the following resources:
+Yönetici rolü atamak için Supabase SQL Editor:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sql
+UPDATE profiles SET role = 'admin' WHERE full_name = 'Adınız';
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Teknoloji
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 (App Router)
+- Supabase (Auth, Postgres, Realtime)
+- Tailwind CSS + shadcn/ui
+- TypeScript
