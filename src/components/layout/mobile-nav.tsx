@@ -11,6 +11,7 @@ import {
   LogOut,
   Shield,
   Building2,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/lib/auth/actions";
@@ -32,9 +33,12 @@ export function MobileNav({ profile }: MobileNavProps) {
 
   const navItems = superAdmin
     ? [
-        { href: "/system", label: "Sistem", icon: Shield },
+        { href: "/system", label: "Panel", icon: LayoutDashboard },
         { href: "/system/companies", label: "Şirketler", icon: Building2 },
-        { href: "/system/companies/new", label: "Yeni", icon: PlusCircle },
+        { href: "/system/tickets", label: "Talepler", icon: Ticket },
+        { href: "/system/users", label: "Kullanıcı", icon: Users },
+        { href: "/system/admins", label: "Admin", icon: Shield },
+        { href: "/system/audit", label: "Denetim", icon: ScrollText },
       ]
     : [
         { href: "/dashboard", label: "Panel", icon: LayoutDashboard },

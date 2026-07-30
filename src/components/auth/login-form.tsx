@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,16 +16,8 @@ import {
 import { loginAction } from "@/lib/auth/actions";
 
 export function LoginForm({ initialError }: { initialError?: string }) {
-  const router = useRouter();
   const [state, action, pending] = useActionState(loginAction, null);
   const error = state?.error ?? initialError;
-
-  useEffect(() => {
-    if (state?.success && state.redirectTo) {
-      router.push(state.redirectTo);
-      router.refresh();
-    }
-  }, [state, router]);
 
   return (
     <Card className="w-full max-w-md">

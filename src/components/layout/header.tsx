@@ -27,18 +27,10 @@ export function Header({ profile }: HeaderProps) {
 
         <nav className="hidden items-center gap-1 md:flex">
           {superAdmin ? (
-            <>
-              <LinkButton href="/system" variant="ghost" size="sm">
-                <Shield className="mr-1 h-4 w-4" />
-                Sistem Paneli
-              </LinkButton>
-              <LinkButton href="/system/companies" variant="ghost" size="sm">
-                Şirketler
-              </LinkButton>
-              <LinkButton href="/system/companies/new" variant="ghost" size="sm">
-                Yeni Şirket
-              </LinkButton>
-            </>
+            <LinkButton href="/system" variant="ghost" size="sm">
+              <Shield className="mr-1 h-4 w-4" />
+              Sistem Paneli
+            </LinkButton>
           ) : (
             <>
               <LinkButton href="/dashboard" variant="ghost" size="sm">

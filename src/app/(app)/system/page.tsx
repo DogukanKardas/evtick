@@ -1,18 +1,35 @@
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-import { requireSuperAdmin } from "@/lib/auth/get-profile";
 import {
   getPlatformStats,
   getCompaniesWithStats,
+  getTicketStatusDistribution,
+  getTicketTrend,
+  getRecentActivity,
+  getPlatformAlerts,
 } from "@/lib/system/actions";
 import { PlatformStatsCards } from "@/components/system/platform-stats-cards";
+import {
+  TicketStatusChart,
+  TicketTrendChart,
+} from "@/components/system/ticket-status-chart";
+import {
+  ActivityFeed,
+  PlatformAlertsPanel,
+} from "@/components/system/activity-feed";
 import { CompanyCard } from "@/components/system/company-card";
 import { LinkButton } from "@/components/ui/link-button";
 
 export default async function SystemDashboardPage() {
-  await requireSuperAdmin();
-  const stats = await getPlatformStats();
-  const companies = await getCompaniesWithStats();
+  const [stats, companies, statusData, trendData, activity, alerts] =
+    await Promise.all([
+      getPlatformStats(),
+      getCompaniesWithStats(),
+      getTicketStatusDistribution(),
+      getTicketTrend(7),
+      getRecentActivity(10),
+      getPlatformAlerts(),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -31,9 +48,19 @@ export default async function SystemDashboardPage() {
 
       <PlatformStatsCards stats={stats} />
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <TicketStatusChart data={statusData} />
+        <TicketTrendChart data={trendData} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActivityFeed items={activity} />
+        <PlatformAlertsPanel alerts={alerts} />
+      </div>
+
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Şirketler</h2>
+          <h2 className="text-lg font-semibold">Son Şirketler</h2>
           <Link
             href="/system/companies"
             className="text-sm text-primary hover:underline"

@@ -10,6 +10,8 @@ export interface Company {
   name: string;
   is_active: boolean;
   created_by: string | null;
+  contact_email: string | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -25,16 +27,61 @@ export interface Profile {
   company_id: string;
   role: UserRole;
   full_name: string;
+  email: string | null;
   created_at: string;
+  company?: Company;
+}
+
+export interface ProfileWithCompany extends Profile {
   company?: Company;
 }
 
 export interface PlatformStats {
   total_companies: number;
   active_companies: number;
+  inactive_companies: number;
   total_users: number;
   total_tickets: number;
   open_tickets: number;
+  tickets_today: number;
+  resolved_this_week: number;
+}
+
+export interface TicketStatusCount {
+  status: TicketStatus;
+  count: number;
+}
+
+export interface TicketTrendDay {
+  date: string;
+  count: number;
+}
+
+export interface PlatformActivity {
+  id: string;
+  type: "company" | "user" | "ticket";
+  title: string;
+  subtitle: string;
+  created_at: string;
+  href?: string;
+}
+
+export interface PlatformAlert {
+  id: string;
+  type: "high_open_tickets" | "inactive_company";
+  message: string;
+  href?: string;
+}
+
+export interface SystemAuditLog {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  actor?: Profile | null;
 }
 
 export interface Ticket {
@@ -52,6 +99,7 @@ export interface Ticket {
   closed_at: string | null;
   creator?: Profile;
   assignee?: Profile | null;
+  company?: Company;
 }
 
 export interface TicketMessage {
@@ -72,3 +120,12 @@ export interface TicketStatusLog {
   created_at: string;
   changer?: Profile;
 }
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  employee: "Çalışan",
+  support: "IT Destek",
+  admin: "Yönetici",
+  super_admin: "Sistem Yöneticisi",
+};
+
+export const ASSIGNABLE_ROLES: UserRole[] = ["employee", "support", "admin"];

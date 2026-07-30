@@ -13,11 +13,16 @@ export async function getProfile(): Promise<Profile | null> {
 
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
-    .select("*, company:companies(*)")
+    .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    console.error("getProfile error:", error.message);
+    return null;
+  }
 
   return data as Profile | null;
 }

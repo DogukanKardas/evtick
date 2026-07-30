@@ -9,7 +9,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const callbackError =
     error === "auth"
       ? "Doğrulama bağlantısı geçersiz veya süresi dolmuş. Tekrar deneyin."
-      : undefined;
+      : error === "profile"
+        ? "Profil bulunamadı. Migration'ları çalıştırın ve tekrar kayıt olun."
+        : undefined;
 
   return <LoginForm initialError={callbackError} />;
 }

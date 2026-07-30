@@ -3,6 +3,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthCallbackUrl } from "@/lib/site-url";
+import {
+  getSupabaseAnonKey,
+  getSupabaseUrl,
+} from "@/lib/supabase/env";
 
 export async function loginAction(
   _prev: { error?: string; success?: boolean; redirectTo?: string } | null,
@@ -16,7 +20,7 @@ export async function loginAction(
     return { error: "Tüm alanları doldurun." };
   }
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!getSupabaseUrl() || !getSupabaseAnonKey()) {
     return {
       error:
         "Supabase bağlantı ayarları eksik. Vercel ortam değişkenlerini kontrol edin.",
@@ -78,7 +82,7 @@ export async function loginAction(
 
   const redirectTo = profile.role === "super_admin" ? "/system" : "/dashboard";
 
-  return { success: true, redirectTo };
+  redirect(redirectTo);
 }
 
 export async function logoutAction() {

@@ -1,14 +1,6 @@
-export function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
-  }
+export { getSiteUrl } from "@/lib/supabase/env";
 
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  return "http://localhost:3000";
-}
+import { getSiteUrl } from "@/lib/supabase/env";
 
 export function getAuthCallbackUrl(): string {
   return `${getSiteUrl()}/auth/callback`;
