@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PlusCircle } from "lucide-react";
 import { requireAuth } from "@/lib/auth/get-profile";
 import { getDashboardStats } from "@/lib/tickets/actions";
@@ -5,11 +6,12 @@ import { StatsCards } from "@/components/dashboard/stats-cards";
 import { LinkButton } from "@/components/ui/link-button";
 import { TicketCard } from "@/components/tickets/ticket-card";
 import { createClient } from "@/lib/supabase/server";
-import { isSupportOrAdmin } from "@/lib/auth/roles";
+import { isSuperAdmin, isSupportOrAdmin } from "@/lib/auth/roles";
 import type { Ticket } from "@/types/database";
 
 export default async function DashboardPage() {
   const profile = await requireAuth();
+  if (isSuperAdmin(profile)) redirect("/system");
   const stats = await getDashboardStats();
   const supabase = await createClient();
   const isStaff = isSupportOrAdmin(profile);

@@ -4,6 +4,14 @@ export function hasRole(profile: Profile, roles: UserRole[]): boolean {
   return roles.includes(profile.role);
 }
 
+export function isSuperAdmin(profile: Profile): boolean {
+  return profile.role === "super_admin";
+}
+
 export function isSupportOrAdmin(profile: Profile): boolean {
   return profile.role === "support" || profile.role === "admin";
+}
+
+export function isCompanyAdmin(profile: Profile): boolean {
+  return profile.role === "admin";
 }

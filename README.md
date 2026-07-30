@@ -6,7 +6,8 @@ Mobil uyumlu, çok kiracılı IT destek talep ve takip web uygulaması.
 
 - **Çok kiracılı yapı:** Her şirketin kendi kodu ile izole veri
 - **Kimlik doğrulama:** Şirket kodu + e-posta + şifre + e-posta doğrulama
-- **Rol bazlı erişim:** Çalışan, IT Destek, Yönetici
+- **Rol bazlı erişim:** Çalışan, IT Destek, Yönetici, Sistem Yöneticisi
+- **Sistem yönetici paneli:** Şirket kodu oluşturma (manuel/otomatik), platform istatistikleri
 - **Ticket yönetimi:** Talep açma, durum takibi, kapatma
 - **Canlı destek chat:** Ticket bazlı gerçek zamanlı mesajlaşma
 
@@ -21,9 +22,13 @@ npm install
 ### 2. Supabase projesi oluşturun
 
 1. [supabase.com](https://supabase.com) üzerinde yeni proje oluşturun
-2. SQL Editor'de migration dosyalarını sırayla çalıştırın:
+2. SQL Editor'de migration dosyalarını **sırayla ve ayrı ayrı** çalıştırın:
    - `supabase/migrations/001_initial_schema.sql`
    - `supabase/migrations/002_fix_auth_trigger.sql`
+   - `supabase/migrations/003_add_super_admin_enum.sql` ← **tek başına çalıştırın, Run**
+   - `supabase/migrations/004_system_admin.sql` ← **sonra bunu çalıştırın**
+
+   > **Not:** `003` ve `004` aynı seferde birleştirilmemeli. PostgreSQL enum değeri commit edilmeden kullanılamaz.
 3. Authentication > URL Configuration'da Site URL ve Redirect URL ekleyin:
    - Site URL: `http://localhost:3000`
    - Redirect URLs: `http://localhost:3000/auth/callback`
@@ -72,6 +77,42 @@ Yönetici rolü atamak için Supabase SQL Editor:
 ```sql
 UPDATE profiles SET role = 'admin' WHERE full_name = 'Adınız';
 ```
+
+## Sistem Yöneticisi (Super Admin)
+
+### İlk sistem yöneticisini oluşturma
+
+1. Normal kayıt akışıyla bir hesap oluşturun
+2. `003` ve `004` migration'larını çalıştırdıktan sonra Supabase SQL Editor'de **ayrı bir sorgu** olarak çalıştırın:
+
+```sql
+UPDATE profiles
+SET
+  role = 'super_admin',
+  company_id = (SELECT id FROM companies WHERE code = 'EVTK')
+WHERE full_name = 'Adınız';
+```
+
+3. Çıkış yapıp tekrar giriş yapın — şirket kodu: **EVTK**
+
+### Şirket kodu oluşturma
+
+Sistem panelinden (`/system`):
+
+1. **Yeni Şirket** → Manuel kod (ör. `ACME01`) veya otomatik kod
+2. Oluşturulan kodu şirket çalışanlarına verin
+3. Çalışanlar `/register` sayfasında bu kodla kayıt olur
+
+Pasif şirketler kayıt ve girişte reddedilir.
+
+### Roller
+
+| Rol | Panel | Yetki |
+|-----|-------|-------|
+| `super_admin` | `/system` | Tüm platform, şirket yönetimi |
+| `admin` | `/admin/users` | Şirket içi kullanıcı yönetimi |
+| `support` | `/support` | Şirket ticketları |
+| `employee` | `/tickets` | Kendi ticketları |
 
 ## Teknoloji
 

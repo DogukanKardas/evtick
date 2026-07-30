@@ -13,6 +13,7 @@ const roleLabels: Record<UserRole, string> = {
   employee: "Çalışan",
   support: "IT Destek",
   admin: "Yönetici",
+  super_admin: "Sistem Yöneticisi",
 };
 
 export default async function AdminUsersPage() {

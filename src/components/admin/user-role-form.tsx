@@ -11,11 +11,13 @@ import {
 import { updateUserRoleAction } from "@/lib/tickets/actions";
 import type { UserRole } from "@/types/database";
 
-const roleLabels: Record<UserRole, string> = {
+const roleLabels: Record<"employee" | "support" | "admin", string> = {
   employee: "Çalışan",
   support: "IT Destek",
   admin: "Yönetici",
 };
+
+const assignableRoles = ["employee", "support", "admin"] as const;
 
 interface UserRoleFormProps {
   userId: string;
@@ -41,7 +43,7 @@ export function UserRoleForm({ userId, currentRole }: UserRoleFormProps) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {(Object.keys(roleLabels) as UserRole[]).map((role) => (
+        {assignableRoles.map((role) => (
           <SelectItem key={role} value={role}>
             {roleLabels[role]}
           </SelectItem>

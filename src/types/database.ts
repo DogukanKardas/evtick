@@ -1,4 +1,4 @@
-export type UserRole = "employee" | "support" | "admin";
+export type UserRole = "employee" | "support" | "admin" | "super_admin";
 
 export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 
@@ -8,7 +8,15 @@ export interface Company {
   id: string;
   code: string;
   name: string;
+  is_active: boolean;
+  created_by: string | null;
   created_at: string;
+}
+
+export interface CompanyWithStats extends Company {
+  user_count: number;
+  ticket_count: number;
+  open_tickets: number;
 }
 
 export interface Profile {
@@ -19,6 +27,14 @@ export interface Profile {
   full_name: string;
   created_at: string;
   company?: Company;
+}
+
+export interface PlatformStats {
+  total_companies: number;
+  active_companies: number;
+  total_users: number;
+  total_tickets: number;
+  open_tickets: number;
 }
 
 export interface Ticket {

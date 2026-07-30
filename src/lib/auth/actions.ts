@@ -59,7 +59,7 @@ export async function loginAction(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("company_id")
+    .select("company_id, role")
     .eq("user_id", user.id)
     .single();
 
@@ -76,7 +76,9 @@ export async function loginAction(
     return { error: "Bu şirket kodu hesabınızla eşleşmiyor." };
   }
 
-  return { success: true, redirectTo: "/dashboard" };
+  const redirectTo = profile.role === "super_admin" ? "/system" : "/dashboard";
+
+  return { success: true, redirectTo };
 }
 
 export async function logoutAction() {
