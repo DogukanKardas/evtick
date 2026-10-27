@@ -2,6 +2,8 @@
 
 A mobile-friendly IT support ticketing platform where many companies share one database but never see each other's data. Tenant isolation is enforced in PostgreSQL with Row-Level Security, not in application code, and is covered by integration tests that try to break it.
 
+**Live demo:** [evtick-live.vercel.app](https://evtick-live.vercel.app)
+
 > 🇹🇷 Türkçe kurulum rehberi: [README.tr.md](README.tr.md)
 
 ## What it does
