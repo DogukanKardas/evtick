@@ -1,141 +1,70 @@
-# EvTick — IT Talep ve Takip Sistemi
+# EvTick — Multi-tenant IT Ticketing on Supabase
 
-Mobil uyumlu, çok kiracılı IT destek talep ve takip web uygulaması.
+A mobile-friendly IT support ticketing platform where many companies share one database but never see each other's data. Tenant isolation is enforced in PostgreSQL with Row-Level Security, not in application code, and is covered by integration tests that try to break it.
 
-## Özellikler
+> 🇹🇷 Türkçe kurulum rehberi: [README.tr.md](README.tr.md)
 
-- **Çok kiracılı yapı:** Her şirketin kendi kodu ile izole veri
-- **Kimlik doğrulama:** Şirket kodu + e-posta + şifre + e-posta doğrulama
-- **Rol bazlı erişim:** Çalışan, IT Destek, Yönetici, Sistem Yöneticisi
-- **Tam kapsamlı sistem paneli:** Dashboard, şirket/kullanıcı/ticket yönetimi, super admin davet, denetim kaydı
-- **Ticket yönetimi:** Talep açma, durum takibi, platform geneli müdahale
-- **Canlı destek chat:** Ticket bazlı gerçek zamanlı mesajlaşma
+## What it does
 
-## Kurulum
+- **Multi-tenant by design** — each company signs up with its own company code; every row carries a `company_id` and RLS policies scope all reads and writes to it.
+- **Four roles** — employee, IT support, company admin and platform super admin, each with its own panel and permissions.
+- **Ticket lifecycle** — create, assign, update status and close tickets, with a real-time chat thread per ticket (Supabase Realtime).
+- **Platform admin panel** — KPIs, company and user management, cross-tenant ticket intervention, super admin invitations and an audit log of every admin action.
 
-### 1. Bağımlılıkları yükleyin
+## Security model
+
+| Concern | How it's handled |
+| --- | --- |
+| Tenant isolation | RLS policies on every table, keyed to the caller's `company_id` |
+| Privilege escalation | Signup trigger always creates `employee`; role metadata from the client is ignored |
+| Privileged operations | `SECURITY DEFINER` functions check the caller's role before acting (e.g. `generate_company_code` is super-admin only) |
+| Service role key | Server-only; used solely for super admin invitations |
+| Open redirects | Auth callback only accepts same-origin relative paths |
+
+The `tests/security` suite runs against a real Supabase instance seeded with two tenants and checks that these rules hold:
+
+- **RLS matrix** — an employee of company A cannot read company B's tickets
+- **IDOR** — an employee cannot post messages to another company's ticket by guessing its ID
+- **Role escalation** — users cannot promote themselves or call admin-only functions
+- **Auth callback** — redirect targets are validated
+
+## Tech stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Supabase (Postgres, Auth, Realtime) · Tailwind CSS · shadcn/ui · Vitest · Playwright
+
+## Project structure
+
+```
+src/app/(auth)        Sign-up, login, email verification
+src/app/(app)         Employee, support, admin and /system panels
+src/lib               Supabase clients, auth helpers, data access
+supabase/migrations   Schema, RLS policies, RPCs, hardening, indexes (001–008)
+tests/security        RLS, IDOR, role-escalation and auth tests
+tests/e2e             Playwright flows: auth, route guards, ticket lifecycle
+tests/perf            Query budget smoke tests
+```
+
+## Running locally
 
 ```bash
 npm install
-```
-
-### 2. Supabase projesi oluşturun
-
-1. [supabase.com](https://supabase.com) üzerinde yeni proje oluşturun
-2. SQL Editor'de migration dosyalarını **sırayla ve ayrı ayrı** çalıştırın:
-   - `supabase/migrations/001_initial_schema.sql`
-   - `supabase/migrations/002_fix_auth_trigger.sql`
-   - `supabase/migrations/003_add_super_admin_enum.sql` ← **tek başına çalıştırın, Run**
-   - `supabase/migrations/004_system_admin.sql` ← **sonra bunu çalıştırın**
-   - `supabase/migrations/005_system_panel_full.sql` ← **sistem paneli genişletmeleri**
-
-   > **Not:** `003` ve `004` aynı seferde birleştirilmemeli. PostgreSQL enum değeri commit edilmeden kullanılamaz.
-3. Authentication > URL Configuration'da Site URL ve Redirect URL ekleyin:
-   - Site URL: `http://localhost:3000`
-   - Redirect URLs: `http://localhost:3000/auth/callback`
-
-### 3. Ortam değişkenlerini ayarlayin
-
-**Vercel (Production):** Project Settings → Environment Variables
-
-| Değişken | Değer |
-|----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxxx.supabase.co` (**zorunlu** — sadece `SUPABASE_URL` yetmez) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
-| `NEXT_PUBLIC_SITE_URL` | `https://your-app.vercel.app` (Vercel domain'iniz) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (**super admin davet için zorunlu — yalnızca sunucu**) |
-
-> **Güvenlik:** `SUPABASE_SERVICE_ROLE_KEY` asla istemci tarafına eklenmemeli. Yalnızca Vercel sunucu ortam değişkenlerinde tutulmalıdır.
-
-**Supabase Auth URL ayarları** (Authentication → URL Configuration):
-
-- Site URL: `https://your-app.vercel.app`
-- Redirect URLs:
-  - `https://your-app.vercel.app/auth/callback`
-  - `http://localhost:3000/auth/callback` (local geliştirme için)
-
-**Local:**
-
-```bash
-cp .env.local.example .env.local
-```
-
-`.env.local` dosyasına `SUPABASE_SERVICE_ROLE_KEY` ekleyin (Supabase Dashboard → Settings → API → service_role).
-
-### 4. Geliştirme sunucusunu başlatın
-
-```bash
+cp .env.local.example .env.local   # add your Supabase URL, anon key and service role key
 npm run dev
 ```
 
-Uygulama `http://localhost:3000` adresinde çalışır.
+Run the SQL files in `supabase/migrations` in order on a new Supabase project. Run `003` on its own before `004`, because PostgreSQL can't use a new enum value in the same transaction that adds it. Step-by-step setup, environment variables and first super admin creation are covered in [README.tr.md](README.tr.md).
 
-## Test Hesabı
+## Tests
 
-Migration sonrası demo şirket kodu: **DEMO01**
-
-1. `/register` sayfasından kayıt olun (şirket kodu: DEMO01)
-2. E-posta doğrulamasını tamamlayın
-3. `/login` ile giriş yapın
-
-Yönetici rolü atamak için Supabase SQL Editor:
-
-```sql
-UPDATE profiles SET role = 'admin' WHERE full_name = 'Adınız';
+```bash
+npm run test:seed       # seed two test tenants (needs service role key)
+npm run test:security   # RLS / IDOR / role escalation
+npm run test:e2e        # Playwright end-to-end flows
+npm run test:all        # everything
 ```
 
-## Sistem Yöneticisi (Super Admin)
+Integration tests skip automatically when Supabase credentials aren't set.
 
-### Panelden super admin davet (önerilen)
+---
 
-1. İlk super admin'i SQL ile oluşturun (aşağıdaki fallback) veya mevcut hesabınızı yükseltin
-2. `/system/admins` sayfasından e-posta + ad soyad ile davet gönderin
-3. Davet edilen kullanıcı e-postasındaki bağlantıyla şifresini belirler
-4. Giriş şirket kodu: **EVTK**
-
-### SQL fallback (ilk kurulum)
-
-Migration sonrası Supabase SQL Editor'de:
-
-```sql
-UPDATE profiles
-SET
-  role = 'super_admin',
-  company_id = (SELECT id FROM companies WHERE code = 'EVTK')
-WHERE full_name = 'Adınız';
-```
-
-### Sistem paneli (`/system`)
-
-| Bölüm | Yol | Açıklama |
-|-------|-----|----------|
-| Dashboard | `/system` | KPI, grafikler, aktivite, uyarılar |
-| Şirketler | `/system/companies` | Arama, filtre, detay sekmeleri |
-| Kullanıcılar | `/system/users` | Platform geneli rol yönetimi |
-| Talepler | `/system/tickets` | Tam müdahale (durum, ata, kapat) |
-| Yöneticiler | `/system/admins` | Super admin davet/yükseltme |
-| Denetim | `/system/audit` | Admin işlem geçmişi |
-
-### Şirket kodu oluşturma
-
-1. **Yeni Şirket** → Manuel kod (ör. `ACME01`) veya otomatik kod
-2. Oluşturulan kodu şirket çalışanlarına verin
-3. Çalışanlar `/register` sayfasında bu kodla kayıt olur
-
-Pasif şirketler kayıt ve girişte reddedilir.
-
-### Roller
-
-| Rol | Panel | Yetki |
-|-----|-------|-------|
-| `super_admin` | `/system` | Tüm platform, şirket/kullanıcı/ticket yönetimi |
-| `admin` | `/admin/users` | Şirket içi kullanıcı yönetimi |
-| `support` | `/support` | Şirket ticketları |
-| `employee` | `/tickets` | Kendi ticketları |
-
-## Teknoloji
-
-- Next.js 16 (App Router)
-- Supabase (Auth, Postgres, Realtime)
-- Tailwind CSS + shadcn/ui
-- TypeScript
+Built by [Dogukan Kardas](https://www.linkedin.com/in/dogukan-kardas/) · [dogukankardas.com](https://www.dogukankardas.com)
